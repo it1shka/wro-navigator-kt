@@ -1,5 +1,5 @@
 plugins {
-  kotlin("jvm") version "1.9.25"
+  kotlin("jvm") version "2.1.10"
   kotlin("plugin.spring") version "1.9.25"
   id("org.springframework.boot") version "3.5.0-M2"
   id("io.spring.dependency-management") version "1.1.7"
@@ -31,6 +31,11 @@ kotlin {
   compilerOptions {
     freeCompilerArgs.addAll("-Xjsr305=strict")
   }
+  /*
+  sourceSets.all {
+    languageSettings.enableLanguageFeature("ExplicitBackingFields")
+  }
+  */
 }
 
 tasks.withType<Test> {

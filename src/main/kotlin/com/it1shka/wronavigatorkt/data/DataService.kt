@@ -18,9 +18,9 @@ class DataService (
 ) {
   private val logger = LoggerFactory.getLogger(this::class.java)
 
-  private val _busStops = mutableMapOf<String, BusStop>()
   val busStops: Map<String, BusStop>
-    get() = _busStops.toMap()
+    get() = _busStops
+  private val _busStops = mutableMapOf<String, BusStop>()
 
   @PostConstruct
   private fun initializeBusStops() {
@@ -43,11 +43,11 @@ class DataService (
   }
 
   private fun processScheduleRecord(record: ScheduleRecord) {
-    if (!_busStops.containsKey(record.startStop)) {
-      newBusStop(record.startStop)
+    if (!busStops.containsKey(record.startStop)) {
+      _busStops[record.startStop] = BusStop(record.startStop)
     }
     if (!_busStops.containsKey(record.endStop)) {
-      newBusStop(record.endStop)
+      _busStops[record.endStop] = BusStop(record.endStop)
     }
     var ok: Boolean = updateBusStop(record.startStop, record, isStart = true)
     if (!ok) {
@@ -59,21 +59,12 @@ class DataService (
     }
   }
 
-  private fun newBusStop(name: String) {
-    _busStops[name] = BusStop(
-      name = name,
-      connections = listOf(),
-      locations = listOf(),
-      busLines = listOf()
-    )
-  }
-
   private fun updateBusStop(name: String, record: ScheduleRecord, isStart: Boolean): Boolean {
-    val previous = _busStops[name] ?: return false
+    val busStop = _busStops[name] ?: return false
     if (isStart) {
       val endStop = _busStops[record.endStop] ?: return false
       val newConnection = TransferConnection(
-        start = previous,
+        start = busStop,
         end = endStop,
         company = record.company,
         line = record.line,
@@ -81,17 +72,13 @@ class DataService (
         arrivalTime = record.arrivalTime,
       )
       val newLocation = (record.startStopLat to record.startStopLon)
-      _busStops[name] = previous.copy(
-        connections = previous.connections + newConnection,
-        locations = previous.locations + newLocation,
-        busLines = previous.busLines + record.line,
-      )
+      busStop.addConnection(newConnection)
+      busStop.addLocation(newLocation)
+      busStop.addBusLine(record.line)
       return true
     }
     val newLocation = (record.endStopLat to record.endStopLon)
-    _busStops[name] = previous.copy(
-      locations = previous.locations + newLocation,
-    )
+    busStop.addLocation(newLocation)
     return true
   }
 }
