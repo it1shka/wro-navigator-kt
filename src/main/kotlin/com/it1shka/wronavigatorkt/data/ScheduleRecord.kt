@@ -1,6 +1,5 @@
 package com.it1shka.wronavigatorkt.data
 
-import com.it1shka.wronavigatorkt.utils.toTimeString
 import com.it1shka.wronavigatorkt.utils.toTimeValue
 
 data class ScheduleRecord(
@@ -46,10 +45,4 @@ data class ScheduleRecord(
       )
     }
   }
-
-  val departureTimeString: String
-    get() = departureTime.toTimeString()
-
-  val arrivalTimeString: String
-    get() = arrivalTime.toTimeString()
 }
