@@ -1,6 +1,8 @@
 package com.it1shka.wronavigatorkt.data
 
-class BusStop (val name: String) {
+import com.it1shka.wronavigatorkt.utils.haversine
+
+class BusStop(val name: String) {
   val connections: List<IConnection>
     get() = _connections
   private val _connections = mutableListOf<IConnection>()
@@ -36,4 +38,10 @@ class BusStop (val name: String) {
   fun addBusLine(line: String) {
     _busLines.add(line)
   }
+
+  fun getAvailableConnections(time: Int): List<IConnection> =
+    _connections.filter { it.available(time) }
+
+  fun distanceTo(other: BusStop): Double =
+    haversine(this.averageLocation, other.averageLocation)
 }
