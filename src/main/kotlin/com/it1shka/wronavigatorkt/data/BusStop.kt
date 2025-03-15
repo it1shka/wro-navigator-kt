@@ -1,47 +1,29 @@
 package com.it1shka.wronavigatorkt.data
 
-import com.it1shka.wronavigatorkt.utils.haversine
+/**
+ * Mutable class representing a bus stop
+ */
+class BusStop(
+  val name: String,
+  val connections: MutableList<IConnection> = mutableListOf(),
+  val locations: MutableSet<Pair<Double, Double>> = mutableSetOf(),
+  val lines: MutableSet<String> = mutableSetOf(),
+) {
+  // call this only after initialization
+  val location by lazy { computeLocation() }
 
-class BusStop(val name: String) {
-  val connections: List<IConnection>
-    get() = _connections
-  private val _connections = mutableListOf<IConnection>()
-
-  val locations: List<Pair<Double, Double>>
-    get() = _locations
-  private val _locations = mutableListOf<Pair<Double, Double>>()
-
-  val busLines: List<String>
-    get() = _busLines
-  private val _busLines = mutableListOf<String>()
-
-  val averageLocation by lazy {
+  private fun computeLocation(): Pair<Double, Double> {
     var latitude = 0.0
     var longitude = 0.0
-    for (location in locations) {
-      latitude += location.first
-      longitude += location.second
+    for ((lat, lon) in locations) {
+      latitude += lat
+      longitude += lon
     }
     latitude /= locations.count()
     longitude /= locations.count()
-    return@lazy latitude to longitude
+    return latitude to longitude
   }
 
-  fun addConnection(connection: IConnection) {
-    _connections.add(connection)
-  }
-
-  fun addLocation(location: Pair<Double, Double>) {
-    _locations.add(location)
-  }
-
-  fun addBusLine(line: String) {
-    _busLines.add(line)
-  }
-
-  fun getAvailableConnections(time: Int): List<IConnection> =
-    _connections.filter { it.available(time) }
-
-  fun distanceTo(other: BusStop): Double =
-    haversine(this.averageLocation, other.averageLocation)
+  fun availableConnections(time: Int): List<IConnection> =
+    connections.filter { it.available(time) }
 }

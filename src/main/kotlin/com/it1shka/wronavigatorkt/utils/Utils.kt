@@ -37,7 +37,7 @@ fun <A, B> Pair<A, A>.map(f: (A) -> B): Pair<B, B> {
 }
 
 fun degreeToRad(degrees: Double): Double {
-  return degrees * Math.PI / 180
+  return degrees * Math.PI / 180.0
 }
 
 /**

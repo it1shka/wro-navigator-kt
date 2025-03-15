@@ -11,9 +11,9 @@ class WroNavigatorKtApplication @Autowired constructor (
   private val dataService: DataService,
 ) : CommandLineRunner {
   override fun run(vararg args: String?) {
-    val firstStops = dataService.busStops.values.asSequence().take(3).toList()
-    for (busStop in firstStops) {
-      println(busStop.name)
+    val firstStop = dataService.busStops.values.first()
+    for (connection in firstStop.connections) {
+      println(connection.distance)
     }
   }
 }

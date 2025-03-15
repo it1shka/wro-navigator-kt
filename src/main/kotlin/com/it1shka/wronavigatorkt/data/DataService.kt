@@ -65,24 +65,24 @@ class DataService (
 
   private fun updateBusStop(name: String, record: ScheduleRecord, isStart: Boolean): Boolean {
     val busStop = _busStops[name] ?: return false
-    if (isStart) {
-      val endStop = _busStops[record.endStop] ?: return false
-      val newConnection = TransferConnection(
-        start = busStop,
-        end = endStop,
-        company = record.company,
-        line = record.line,
-        departureTime = record.departureTime,
-        arrivalTime = record.arrivalTime,
-      )
-      val newLocation = (record.startStopLat to record.startStopLon)
-      busStop.addConnection(newConnection)
-      busStop.addLocation(newLocation)
-      busStop.addBusLine(record.line)
+    if (!isStart) {
+      busStop.locations.add(record.endStopLat to record.endStopLon)
       return true
     }
-    val newLocation = (record.endStopLat to record.endStopLon)
-    busStop.addLocation(newLocation)
+    val endStop = _busStops[record.endStop] ?: return false
+    val newConnection = TransferConnection(
+      start = busStop,
+      end = endStop,
+      company = record.company,
+      line = record.line,
+      departureTime = record.departureTime,
+      arrivalTime = record.arrivalTime,
+      startLocation = record.startStopLat to record.startStopLon,
+      endLocation = record.endStopLat to record.endStopLon,
+    )
+    busStop.connections.add(newConnection)
+    busStop.locations.add(record.startStopLat to record.startStopLon)
+    busStop.lines.add(record.line)
     return true
   }
 
@@ -97,12 +97,12 @@ class DataService (
           start = stops[i],
           end = stops[j],
         )
-        stops[i].addConnection(connectionA)
+        stops[i].connections.add(connectionA)
         val connectionB = WalkConnection(
           start = stops[j],
           end = stops[i],
         )
-        stops[j].addConnection(connectionB)
+        stops[j].connections.add(connectionB)
       }
     }
   }
