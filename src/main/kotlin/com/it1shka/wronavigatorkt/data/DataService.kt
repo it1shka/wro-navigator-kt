@@ -40,6 +40,10 @@ class DataService (
       }
     }
     logger.info("Parsed $counter schedule records in $initializationTime")
+    val walkJoinTime = measureTime {
+      connectByWalk()
+    }
+    logger.info("Joined by walk stops in $walkJoinTime")
   }
 
   private fun processScheduleRecord(record: ScheduleRecord) {
@@ -80,5 +84,26 @@ class DataService (
     val newLocation = (record.endStopLat to record.endStopLon)
     busStop.addLocation(newLocation)
     return true
+  }
+
+  /**
+   * Adds connections all to all by walk
+   */
+  private fun connectByWalk() {
+    val stops = _busStops.values.toList()
+    for (i in 0 until stops.size) {
+      for (j in (i + 1) until stops.size) {
+        val connectionA = WalkConnection(
+          start = stops[i],
+          end = stops[j],
+        )
+        stops[i].addConnection(connectionA)
+        val connectionB = WalkConnection(
+          start = stops[j],
+          end = stops[i],
+        )
+        stops[j].addConnection(connectionB)
+      }
+    }
   }
 }
