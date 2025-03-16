@@ -1,5 +1,6 @@
 package com.it1shka.wronavigatorkt.data
 
+import com.it1shka.wronavigatorkt.utils.levenshtein
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -8,8 +9,6 @@ import org.springframework.stereotype.Service
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import kotlin.time.measureTime
-
-// TODO: implement search of stops
 
 @Service
 class DataService (
@@ -21,6 +20,17 @@ class DataService (
   val busStops: Map<String, BusStop>
     get() = _busStops
   private val _busStops = mutableMapOf<String, BusStop>()
+
+  fun findStopsByName(name: String, count: Int = 5): List<BusStop> {
+    return busStops
+      .keys
+      .asSequence()
+      .map { it to levenshtein(it, name) }
+      .sortedBy { (_, distance) -> distance }
+      .mapNotNull { (name, _) -> busStops[name] }
+      .take(count)
+      .toList()
+  }
 
   @PostConstruct
   private fun initializeBusStops() {

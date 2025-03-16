@@ -67,3 +67,25 @@ fun haversine(start: Pair<Double, Double>, end: Pair<Double, Double>): Double {
   val sqrtArg = sin((f2 - f1) / 2).pow(2.0) + sin((l2 - l1) / 2).pow(2.0) * cos(f1) * cos(f2)
   return 2 * earthRadius * sqrt(sqrtArg)
 }
+
+/**
+ * Computes distance between two strings
+ */
+fun levenshtein(s: String, t: String): Int {
+  if (s.isEmpty()) return t.length
+  if (t.isEmpty()) return s.length
+  val arr = Array(t.length + 1) {
+    IntArray(s.length + 1)
+  }
+  for (i in 0 .. t.length) {
+    arr[i][0] = i
+    for (j in 1 .. s.length) {
+      arr[i][j] = if (i == 0) j else minOf(
+        arr[i - 1][j] + 1,
+        arr[i][j - 1] + 1,
+        arr[i - 1][j - 1] + if (s[j - 1] == t[i - 1]) 0 else 1,
+      )
+    }
+  }
+  return arr[t.length][s.length]
+}

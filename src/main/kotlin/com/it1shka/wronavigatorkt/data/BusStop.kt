@@ -11,8 +11,21 @@ class BusStop(
   val locations: MutableSet<Pair<Double, Double>> = mutableSetOf(),
   val lines: MutableSet<String> = mutableSetOf(),
 ) {
-  // call this only after initialization
+  // call these fields only after initialization
   val location by lazy { computeLocation() }
+
+  val description by lazy {
+    val (lat, lon) = location
+    val connCount = connections.size
+    val locCount = locations.size
+    val linesCount = lines.size
+    """
+      Bus stop "$name at ($lat, $lon)"
+      Connections: $connCount
+      Locations: $locCount
+      Lines: $linesCount
+    """.trimIndent()
+  }
 
   private fun computeLocation(): Pair<Double, Double> {
     var latitude = 0.0
