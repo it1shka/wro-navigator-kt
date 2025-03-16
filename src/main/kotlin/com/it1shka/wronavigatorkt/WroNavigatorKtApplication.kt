@@ -12,8 +12,8 @@ class WroNavigatorKtApplication @Autowired constructor (
 ) : CommandLineRunner {
   override fun run(vararg args: String?) {
     val firstStop = dataService.busStops.values.first()
-    for (connection in firstStop.connections) {
-      println(connection.distance)
+    for (connection in firstStop.availableConnections("11:30:00", "01:30:00")) {
+      println(connection.description)
     }
   }
 }

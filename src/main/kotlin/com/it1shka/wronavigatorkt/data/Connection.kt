@@ -1,6 +1,7 @@
 package com.it1shka.wronavigatorkt.data
 
 import com.it1shka.wronavigatorkt.utils.haversine
+import com.it1shka.wronavigatorkt.utils.toDistanceDescription
 import com.it1shka.wronavigatorkt.utils.toTimeDescription
 import com.it1shka.wronavigatorkt.utils.toTimeString
 import kotlin.math.roundToInt
@@ -16,11 +17,14 @@ interface IConnection {
   val duration: Int
   val distance: Double
   val description: String
-  fun available(time: Int): Boolean
+  fun waitingTime(time: Int): Int
   fun distanceBetweenStops(): Double {
     val startLocation = start.location
     val endLocation = end.location
     return haversine(startLocation, endLocation)
+  }
+  fun totalTimeCost(passengerTime: Int): Int {
+    return waitingTime(passengerTime) + duration
   }
 }
 
@@ -48,12 +52,17 @@ data class TransferConnection (
     val endStopName = end.name
     val departure = departureTime.toTimeString()
     val arrival = arrivalTime.toTimeString()
-    val output = "$line by bus \"$line\": $startStopName ($departure) - $endStopName $arrival"
+    val output = "$company by bus \"$line\": $startStopName ($departure) - $endStopName ($arrival)"
     return@lazy output
   }
 
-  override fun available(time: Int): Boolean =
-    time <= departureTime
+  override fun waitingTime(passengerTime: Int): Int {
+    if (passengerTime <= departureTime) {
+      return departureTime - passengerTime
+    }
+    val totalDayTime = 24 * 60 * 60
+    return totalDayTime - passengerTime + departureTime
+  }
 }
 
 /**
@@ -82,9 +91,10 @@ data class WalkConnection (
     val startStopName = start.name
     val endStopName = end.name
     val timeDescription = duration.toTimeDescription()
-    val output = "Walk ${distance}km from $startStopName to $endStopName for $timeDescription"
+    val distanceDescription = distance.toDistanceDescription()
+    val output = "Walk $distanceDescription from $startStopName to $endStopName for $timeDescription"
     return@lazy output
   }
 
-  override fun available(time: Int) = true
+  override fun waitingTime(passengerTime: Int): Int = 0
 }
