@@ -89,3 +89,11 @@ fun levenshtein(s: String, t: String): Int {
   }
   return arr[t.length][s.length]
 }
+
+fun timeDistance(from: Int, to: Int): Int {
+  if (from <= to) {
+    return to - from
+  }
+  val totalDayTime = 24 * 60 * 60
+  return totalDayTime - from + to
+}

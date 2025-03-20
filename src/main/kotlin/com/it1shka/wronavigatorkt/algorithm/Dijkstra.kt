@@ -24,25 +24,32 @@ fun <Node> dijkstra(problem: Problem<Node>): Solution<Node> {
   val distances = mutableMapOf<Node, Int>()
   val footprints = mutableMapOf<Node, Edge<Node>>()
   val queue = PriorityQueue<Pair<Node, Int>>(compareBy { it.second })
+
   distances[problem.start] = 0
   queue.add(problem.start to 0)
+
   while (queue.isNotEmpty()) {
-    val (node, distance) = queue.poll()
+    val (node, nodeDistance) = queue.poll()
+    if (nodeDistance > distances.getOrDefault(node, Int.MAX_VALUE)) {
+      continue
+    }
+
     for (edge in problem.edges(node)) {
-      val distance = edge.weight + distance
+      val newDistance = edge.weight + nodeDistance
       val existingDistance = distances.getOrDefault(edge.end, Int.MAX_VALUE)
-      if (distance < existingDistance) {
-        distances[edge.end] = distance
+      if (newDistance < existingDistance) {
+        distances[edge.end] = newDistance
         footprints[edge.end] = edge
-        queue.add(edge.end to distance)
+        queue.add(edge.end to newDistance)
       }
     }
   }
+
   val route = mutableListOf<Edge<Node>>()
   var currentEdge = footprints[problem.end]
   while (currentEdge != null) {
     route.add(currentEdge)
     currentEdge = footprints[currentEdge.start]
   }
-  return route
+  return route.asReversed()
 }

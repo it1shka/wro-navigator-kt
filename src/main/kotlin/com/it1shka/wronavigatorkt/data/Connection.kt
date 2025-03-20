@@ -1,6 +1,7 @@
 package com.it1shka.wronavigatorkt.data
 
 import com.it1shka.wronavigatorkt.utils.haversine
+import com.it1shka.wronavigatorkt.utils.timeDistance
 import com.it1shka.wronavigatorkt.utils.toDistanceDescription
 import com.it1shka.wronavigatorkt.utils.toTimeDescription
 import com.it1shka.wronavigatorkt.utils.toTimeString
@@ -41,7 +42,7 @@ data class TransferConnection (
   val startLocation: Pair<Double, Double>,
   val endLocation: Pair<Double, Double>,
 ) : IConnection {
-  override val duration = arrivalTime - departureTime
+  override val duration = timeDistance(departureTime, arrivalTime)
 
   override val distance by lazy {
     haversine(startLocation, endLocation)
@@ -56,13 +57,8 @@ data class TransferConnection (
     return@lazy output
   }
 
-  override fun waitingTime(passengerTime: Int): Int {
-    if (passengerTime <= departureTime) {
-      return departureTime - passengerTime
-    }
-    val totalDayTime = 24 * 60 * 60
-    return totalDayTime - passengerTime + departureTime
-  }
+  override fun waitingTime(passengerTime: Int): Int =
+    timeDistance(passengerTime, departureTime)
 }
 
 /**

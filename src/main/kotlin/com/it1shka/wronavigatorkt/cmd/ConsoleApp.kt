@@ -47,7 +47,7 @@ class ConsoleApp @Autowired constructor(
         println("${index + 1} ${stop.name}")
       }
       println("Select (1-${potentialStops.size}) to choose a stop, or -1 to search again: ")
-      val userChoice = (readlnOrNull() ?: "-1").trim().toIntOrNull() ?: -1
+      val userChoice = (readlnOrNull() ?: "-1").trim().toIntOrNull()?.let { it - 1 } ?: -1
       if (userChoice == -1 || userChoice !in potentialStops.indices) {
         continue
       }
