@@ -97,3 +97,14 @@ fun timeDistance(from: Int, to: Int): Int {
   val totalDayTime = 24 * 60 * 60
   return totalDayTime - from + to
 }
+
+fun <T, K> List<T>.groupConsecutiveBy(selector: (T) -> K): List<List<T>> {
+  return fold(mutableListOf<MutableList<T>>()) { acc, item ->
+    if (acc.isEmpty() || selector(acc.last().last()) != selector(item)) {
+      acc.add(mutableListOf(item))
+    } else {
+      acc.last().add(item)
+    }
+    acc
+  }
+}

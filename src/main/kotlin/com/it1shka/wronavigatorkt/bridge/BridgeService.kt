@@ -2,12 +2,12 @@ package com.it1shka.wronavigatorkt.bridge
 
 import com.it1shka.wronavigatorkt.algorithm.Edge
 import com.it1shka.wronavigatorkt.algorithm.Problem
-import com.it1shka.wronavigatorkt.algorithm.Solution
 import com.it1shka.wronavigatorkt.algorithm.dijkstra
 import com.it1shka.wronavigatorkt.data.DataService
 import com.it1shka.wronavigatorkt.utils.toTimeValue
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import kotlin.time.measureTime
 
 /**
  * Bridge creates instance of
@@ -59,9 +59,19 @@ class BridgeService @Autowired constructor(
   }
 
   fun <Node> solveProblem(problem: Problem<Node>, algorithm: String): String {
-    return when (algorithm) {
-      "dijkstra" -> dijkstra(problem).joinToString("\n") { it.description }
-      else -> "No such algorithm"
+    var route: List<Edge<Node>>? = null
+    val time = measureTime {
+      route = when (algorithm.lowercase()) {
+        "dijkstra" -> dijkstra(problem)
+        else -> null
+      }
     }
+    return if (route == null) "No such algorithm: $algorithm"
+    else compressRoute(route) + "\nFinished in $time"
+  }
+
+  private fun <Node> compressRoute(route: List<Edge<Node>>): String {
+    // TODO: compress it normally
+    return route.joinToString("\n") { it.description }
   }
 }

@@ -5,6 +5,7 @@ import com.it1shka.wronavigatorkt.data.BusStop
 import com.it1shka.wronavigatorkt.data.DataService
 import com.it1shka.wronavigatorkt.utils.toTimeValue
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Service
 
@@ -12,6 +13,8 @@ import org.springframework.stereotype.Service
 class ConsoleApp @Autowired constructor(
   private val dataService: DataService,
   private val bridgeService: BridgeService,
+  @Value("\${data.acceptable-lexical-difference}")
+  val acceptableLexicalDifference: Int,
 ) : CommandLineRunner {
   override fun run(vararg args: String?) {
     while (true) {
@@ -41,7 +44,14 @@ class ConsoleApp @Autowired constructor(
         println("No input provided. Please, try again.")
         continue
       }
-      val potentialStops = dataService.findStopsByName(userInput)
+      val potentialStopsWithDistances = dataService.findStopsByName(userInput)
+      val bestStop = potentialStopsWithDistances.minBy { it.second }
+      if (bestStop.second <= acceptableLexicalDifference) {
+        return bestStop.first
+      }
+      val potentialStops = potentialStopsWithDistances
+        .sortedBy { it.second }
+        .map { it.first }
       println("Potential stops: ")
       for ((index, stop) in potentialStops.withIndex()) {
         println("${index + 1} ${stop.name}")
