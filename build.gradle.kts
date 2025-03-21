@@ -32,11 +32,10 @@ kotlin {
   compilerOptions {
     freeCompilerArgs.addAll("-Xjsr305=strict")
   }
-  /*
   sourceSets.all {
-    languageSettings.enableLanguageFeature("ExplicitBackingFields")
+    // languageSettings.enableLanguageFeature("ExplicitBackingFields")
+    languageSettings.enableLanguageFeature("WhenGuards")
   }
-  */
 }
 
 tasks.withType<Test> {

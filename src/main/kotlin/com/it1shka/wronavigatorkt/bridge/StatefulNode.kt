@@ -3,10 +3,10 @@ package com.it1shka.wronavigatorkt.bridge
 /**
  * Additionally stores passenger time
  */
-class TimeNode (val stopName: String, val time: Int) {
+class StatefulNode (val stopName: String, val time: Int) {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
-    if (other !is TimeNode) return false
+    if (other !is StatefulNode) return false
     return this.stopName == other.stopName
   }
 
