@@ -1,6 +1,5 @@
 package com.it1shka.wronavigatorkt.data
 
-import com.it1shka.wronavigatorkt.utils.levenshtein
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -20,20 +19,6 @@ class DataService (
   val busStops: Map<String, BusStop>
     get() = _busStops
   private val _busStops = mutableMapOf<String, BusStop>()
-
-  fun findStopsByName(name: String, count: Int = 5): List<Pair<BusStop, Int>> {
-    return busStops
-      .keys
-      .asSequence()
-      .map { it to levenshtein(it, name) }
-      .sortedBy { (_, distance) -> distance }
-      .mapNotNull { (name, distance) ->
-        val stop = busStops[name] ?: return@mapNotNull null
-        stop to distance
-      }
-      .take(count)
-      .toList()
-  }
 
   @PostConstruct
   private fun initializeBusStops() {

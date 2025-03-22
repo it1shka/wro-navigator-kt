@@ -77,9 +77,9 @@ fun levenshtein(s: String, t: String): Int {
   val arr = Array(t.length + 1) {
     IntArray(s.length + 1)
   }
-  for (i in 0 .. t.length) {
+  for (i in 0..t.length) {
     arr[i][0] = i
-    for (j in 1 .. s.length) {
+    for (j in 1..s.length) {
       arr[i][j] = if (i == 0) j else minOf(
         arr[i - 1][j] + 1,
         arr[i][j - 1] + 1,
@@ -106,5 +106,58 @@ fun <T, K> List<T>.groupConsecutiveBy(selector: (T) -> K): List<List<T>> {
       acc.last().add(item)
     }
     acc
+  }
+}
+
+data class LevenshteinResult(
+  val best: String,
+  val bestDistance: Int,
+  val otherPossibilities: List<Pair<String, Int>>,
+)
+
+fun stringSearch(needle: String, haystack: Iterable<String>, consider: Int = 5): LevenshteinResult {
+  assert(consider > 0) { "consider must be > 0" }
+  val possibilities = haystack
+    .asSequence()
+    .map { it to levenshtein(needle, it) }
+    .sortedBy { it.second }
+    .take(consider)
+    .toList()
+  val (best, bestDistance) = possibilities.first()
+  return LevenshteinResult(best, bestDistance, possibilities)
+}
+
+/**
+ * Used for accepting user input.
+ * Includes validation
+ */
+fun String.intoSeconds(): Int? {
+  val parts = this
+    .split(':')
+    .map {
+      it.toIntOrNull()
+        ?.let {
+          if (it < 0) null else it
+        }
+    }
+  val notNullParts = parts.filterNotNull()
+  if (notNullParts.size != parts.size) return null
+  return when (notNullParts.size) {
+    1 -> {
+      val (hours) = notNullParts
+      if (hours <= 23) hours * 3600 else null
+    }
+
+    2 -> {
+      val (hours, minutes) = notNullParts
+      if (hours <= 23 && minutes <= 59) hours * 3600 + minutes * 60 else null
+    }
+
+    3 -> {
+      val (hours, minutes, seconds) = notNullParts
+      if (hours <= 23 && minutes <= 59 && seconds <= 59) hours * 3600 + minutes * 60 + seconds else null
+    }
+
+    else -> null
   }
 }
