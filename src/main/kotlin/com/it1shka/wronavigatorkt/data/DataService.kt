@@ -1,5 +1,6 @@
 package com.it1shka.wronavigatorkt.data
 
+import com.it1shka.wronavigatorkt.utils.haversine
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -13,6 +14,10 @@ import kotlin.time.measureTime
 class DataService (
   @Value("classpath:original_graph.csv")
   private val scheduleResource: Resource,
+  @Value("\${graph.walk-connections.apply-restrictions}")
+  private val applyWalkRestrictions: Boolean,
+  @Value("\${graph.walk-connections.max-allowed-distance}")
+  private val maxWalkAllowedDistance: Double,
 ) {
   private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -42,10 +47,22 @@ class DataService (
       connectByWalk()
     }
     logger.info("Joined by walk stops in $walkJoinTime")
+    reportGraph()
+  }
+
+  /**
+   * Shows amount of nodes
+   * and connections between them
+   */
+  private fun reportGraph() {
+    val nodesCount = _busStops.keys.size
+    logger.info("Graph contains $nodesCount nodes")
+    val connCount = _busStops.values.sumOf { it.connections.size }
+    logger.info("Graph contains $connCount edges")
   }
 
   private fun processScheduleRecord(record: ScheduleRecord) {
-    if (!busStops.containsKey(record.startStop)) {
+    if (!_busStops.containsKey(record.startStop)) {
       _busStops[record.startStop] = BusStop(record.startStop)
     }
     if (!_busStops.containsKey(record.endStop)) {
@@ -91,6 +108,10 @@ class DataService (
     val stops = _busStops.values.toList()
     for (i in 0 until stops.size) {
       for (j in (i + 1) until stops.size) {
+        if (applyWalkRestrictions) {
+          val distance = haversine(stops[i].location, stops[j].location)
+          if (distance > maxWalkAllowedDistance) continue
+        }
         val connectionA = WalkConnection(
           start = stops[i],
           end = stops[j],
