@@ -38,3 +38,6 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+# Custom graph file
+src/main/resources/original_graph.csv
