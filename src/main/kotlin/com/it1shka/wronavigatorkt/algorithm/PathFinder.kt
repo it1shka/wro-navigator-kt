@@ -27,21 +27,26 @@ fun <Node> pathFinder(problem: Problem<Node>): Solution<Node> {
 
     for (edge in problem.edges(currentNode)) {
       val next = edge.end
+      val currentDistance = getG(currentNode) + edge.weight
       if (next !in openList && next !in closedList) {
-        g[next] = getG(currentNode) + edge.weight
-        h[next] = problem.heuristic(next)
-        f[next] = getG(next) + getH(next)
+        val currentHeuristic = problem.heuristic(next)
+        g[next] = currentDistance
+        h[next] = currentHeuristic
+        f[next] = currentDistance + currentHeuristic
         parents[next] = edge
         openList.add(next)
         continue
       }
-      if (getG(next) > getG(currentNode) + edge.weight) {
-        g[next] = getG(currentNode) + edge.weight
-        f[next] = getG(next) + getH(next)
+      if (getG(next) > currentDistance) {
+        g[next] = currentDistance
+        f[next] = currentDistance + getH(next)
         parents[next] = edge
         if (next in closedList) {
           openList.add(next)
           closedList.remove(next)
+        } else { // updating the weight
+          openList.remove(next)
+          openList.add(next)
         }
       }
     }

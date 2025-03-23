@@ -5,6 +5,7 @@ import com.it1shka.wronavigatorkt.algorithm.Problem
 import com.it1shka.wronavigatorkt.algorithm.Solution
 import com.it1shka.wronavigatorkt.algorithm.dijkstra
 import com.it1shka.wronavigatorkt.algorithm.pathFinder
+import com.it1shka.wronavigatorkt.data.BusStop
 import com.it1shka.wronavigatorkt.data.DataService
 import com.it1shka.wronavigatorkt.data.TransferConnection
 import com.it1shka.wronavigatorkt.data.WalkConnection
@@ -34,6 +35,8 @@ class BridgeService @Autowired constructor(
   private val allowedWalkTime: Int,
   @Value("\${bridge.parameter.transfers.allowed-wait-time}")
   private val allowedWaitTime: Int,
+  @Value("\${bridge.heuristic.avg-bus-speed}")
+  private val avgBusSpeed: Double,
 ) {
   /**
    * Does not validate the input
@@ -79,7 +82,7 @@ class BridgeService @Autowired constructor(
     val thisStop = dataService.busStops[it.stopName] ?: return@heuristic 0.0
     val endStop = dataService.busStops[formulation.end] ?: return@heuristic 0.0
     when (formulation.heuristic) {
-      Heuristic.DISTANCE -> haversine(thisStop.location, endStop.location)
+      Heuristic.DISTANCE -> distanceHeuristic(thisStop, endStop, formulation)
       Heuristic.LINES_COUNT -> thisStop.lines.size.toDouble()
       Heuristic.CONNECTION_COUNT -> thisStop.connections.size.toDouble()
       Heuristic.LINES_OVERLAP -> endStop.lines.intersect(thisStop.lines).size.toDouble()
@@ -128,6 +131,14 @@ class BridgeService @Autowired constructor(
         description = conn.description,
         weight = weight,
       )
+    }
+  }
+
+  private fun distanceHeuristic(start: BusStop, end: BusStop, formulation: Formulation): Double {
+    val pureDistance = haversine(start.location, end.location)
+    return when (formulation.parameter) {
+      Parameter.TIME -> (pureDistance / avgBusSpeed) * 3600.0 * 0.5
+      Parameter.TRANSFERS -> pureDistance
     }
   }
 }
