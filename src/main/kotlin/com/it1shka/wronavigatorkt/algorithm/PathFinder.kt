@@ -2,6 +2,8 @@ package com.it1shka.wronavigatorkt.algorithm
 
 import java.util.PriorityQueue
 
+private const val SKIP_CLOSED = true
+
 fun <Node> pathFinder(problem: Problem<Node>): Solution<Node> {
   val g = mutableMapOf<Node, Int>()
   val h = mutableMapOf<Node, Double>()
@@ -27,6 +29,10 @@ fun <Node> pathFinder(problem: Problem<Node>): Solution<Node> {
 
     for (edge in problem.edges(currentNode)) {
       val next = edge.end
+
+      // another modification of a*
+      if (SKIP_CLOSED && next in closedList) continue
+
       val currentDistance = getG(currentNode) + edge.weight
       if (next !in openList && next !in closedList) {
         val currentHeuristic = problem.heuristic(next)

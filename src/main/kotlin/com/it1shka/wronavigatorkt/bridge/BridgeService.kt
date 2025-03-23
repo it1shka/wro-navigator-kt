@@ -35,8 +35,12 @@ class BridgeService @Autowired constructor(
   private val allowedWalkTime: Int,
   @Value("\${bridge.parameter.transfers.allowed-wait-time}")
   private val allowedWaitTime: Int,
+  @Value("\${bridge.parameter.transfers.penalty}")
+  private val penalty: Int,
   @Value("\${bridge.heuristic.avg-bus-speed}")
   private val avgBusSpeed: Double,
+  @Value("\${bridge.heuristic.avg-interstop-distance}")
+  private val avgInterstopDistance: Double,
 ) {
   /**
    * Does not validate the input
@@ -118,8 +122,8 @@ class BridgeService @Autowired constructor(
     val busStop = dataService.busStops[node.stopName] ?: return emptyList()
     return busStop.connections.map { conn ->
       val weight = when (conn) {
-        is WalkConnection if (conn.duration > allowedWalkTime) -> Int.MAX_VALUE
-        is TransferConnection if (conn.waitingTime(node.time) > allowedWaitTime) -> Int.MAX_VALUE
+        is WalkConnection if (conn.duration > allowedWalkTime) -> penalty
+        is TransferConnection if (conn.waitingTime(node.time) > allowedWaitTime) -> penalty
         else -> 1
       }
       Edge(
@@ -138,7 +142,7 @@ class BridgeService @Autowired constructor(
     val pureDistance = haversine(start.location, end.location)
     return when (formulation.parameter) {
       Parameter.TIME -> (pureDistance / avgBusSpeed) * 3600.0 * 0.5
-      Parameter.TRANSFERS -> pureDistance
+      Parameter.TRANSFERS -> pureDistance / avgInterstopDistance
     }
   }
 }
