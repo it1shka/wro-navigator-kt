@@ -41,6 +41,18 @@ class BridgeService @Autowired constructor(
   private val avgBusSpeed: Double,
   @Value("\${bridge.heuristic.avg-interstop-distance}")
   private val avgInterstopDistance: Double,
+  @Value("\${bridge.heuristic.lines-count-to-time}")
+  private val linesCountToTime: Double,
+  @Value("\${bridge.heuristic.lines-count-to-transfers}")
+  private val linesCountToTransfers: Double,
+  @Value("\${bridge.heuristic.conn-count-to-time}")
+  private val connCountToTime: Double,
+  @Value("\${bridge.heuristic.conn-count-to-transfers}")
+  private val connCountToTransfers: Double,
+  @Value("\${bridge.heuristic.lines-overlap-to-time}")
+  private val linesOverlapToTime: Double,
+  @Value("\${bridge.heuristic.lines-overlap-to-transfers}")
+  private val linesOverlapToTransfers: Double,
 ) {
   /**
    * Does not validate the input
@@ -87,9 +99,9 @@ class BridgeService @Autowired constructor(
     val endStop = dataService.busStops[formulation.end] ?: return@heuristic 0.0
     when (formulation.heuristic) {
       Heuristic.DISTANCE -> distanceHeuristic(thisStop, endStop, formulation)
-      Heuristic.LINES_COUNT -> thisStop.lines.size.toDouble()
-      Heuristic.CONNECTION_COUNT -> thisStop.connections.size.toDouble()
-      Heuristic.LINES_OVERLAP -> endStop.lines.intersect(thisStop.lines).size.toDouble()
+      Heuristic.LINES_COUNT -> linesCountHeuristic(thisStop, formulation)
+      Heuristic.CONNECTION_COUNT -> connCountHeuristic(thisStop, formulation)
+      Heuristic.LINES_OVERLAP -> linesOverlapHeuristic(thisStop, endStop, formulation)
     }
   }
 
@@ -143,6 +155,28 @@ class BridgeService @Autowired constructor(
     return when (formulation.parameter) {
       Parameter.TIME -> (pureDistance / avgBusSpeed) * 3600.0 * 0.5
       Parameter.TRANSFERS -> pureDistance / avgInterstopDistance
+    }
+  }
+
+  private fun linesCountHeuristic(stop: BusStop, formulation: Formulation): Double {
+    return when (formulation.parameter) {
+      Parameter.TIME -> (1.0 / (stop.lines.size.toDouble() + 1.0)) * linesCountToTime
+      Parameter.TRANSFERS -> (1.0 / (stop.lines.size.toDouble() + 1.0)) * linesCountToTransfers
+    }
+  }
+
+  private fun connCountHeuristic(stop: BusStop, formulation: Formulation): Double {
+    return when (formulation.parameter) {
+      Parameter.TIME -> (1.0 / (stop.connections.size.toDouble() + 1.0)) * connCountToTime
+      Parameter.TRANSFERS -> (1.0 / (stop.connections.size.toDouble() + 1.0)) + connCountToTransfers
+    }
+  }
+
+  private fun linesOverlapHeuristic(current: BusStop, end: BusStop, formulation: Formulation): Double {
+    val overlap = current.lines.intersect(end.lines).size.toDouble()
+    return when (formulation.parameter) {
+      Parameter.TIME -> (1.0 / (overlap + 1.0)) * linesOverlapToTime
+      Parameter.TRANSFERS -> (1.0 / (overlap + 1.0)) * linesOverlapToTransfers
     }
   }
 }
