@@ -97,7 +97,10 @@ class BridgeService @Autowired constructor(
   }
 
   fun solveAndReport(formulation: Formulation): String {
-    val (route, duration) = solve(formulation)
+    val (route, runtime) = solve(formulation)
+    if (route.isEmpty()) {
+      return "You are already on the right stop :)"
+    }
 
     val routeSummary = route.joinToString("\n") { it.description }
 
@@ -117,7 +120,7 @@ class BridgeService @Autowired constructor(
       Parameter.TRANSFERS -> "Minimized parameter: Transfers"
     }
 
-    val runtimeSummary = "Finished in $duration"
+    val runtimeSummary = "Finished in $runtime"
     return listOf(
       routeSummary,
       durationSummary,

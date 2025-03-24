@@ -22,9 +22,10 @@ fun String.toTimeValue(applyModulus: Boolean = true): Int? {
 }
 
 fun Int.toTimeString(): String {
-  val seconds = (this % 60).toString().padStart(2, '0')
-  val minutes = ((this / 60) % 60).toString().padStart(2, '0')
-  val hours = (this / 3600).toString().padStart(2, '0')
+  val timeValue = this % (24 * 60 * 60)
+  val seconds = (timeValue % 60).toString().padStart(2, '0')
+  val minutes = ((timeValue / 60) % 60).toString().padStart(2, '0')
+  val hours = (timeValue / 3600).toString().padStart(2, '0')
   return "${hours}:${minutes}:${seconds}"
 }
 
