@@ -45,11 +45,5 @@ fun <Node> dijkstra(problem: Problem<Node>): Solution<Node> {
     }
   }
 
-  val route = mutableListOf<Edge<Node>>()
-  var currentEdge = footprints[problem.end]
-  while (currentEdge != null) {
-    route.add(currentEdge)
-    currentEdge = footprints[currentEdge.start]
-  }
-  return route.asReversed()
+  return traceRoute(footprints, problem.end)
 }

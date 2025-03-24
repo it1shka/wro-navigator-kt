@@ -12,7 +12,7 @@ import kotlin.math.roundToInt
  * bus stops. IConnection subclasses must be
  * used after initialization of all stops
  */
-interface IConnection {
+sealed interface IConnection {
   val start: BusStop
   val end: BusStop
   val duration: Int

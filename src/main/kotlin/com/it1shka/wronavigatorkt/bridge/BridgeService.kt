@@ -10,6 +10,8 @@ import com.it1shka.wronavigatorkt.data.DataService
 import com.it1shka.wronavigatorkt.data.TransferConnection
 import com.it1shka.wronavigatorkt.data.WalkConnection
 import com.it1shka.wronavigatorkt.utils.haversine
+import com.it1shka.wronavigatorkt.utils.toTimeDescription
+import com.it1shka.wronavigatorkt.utils.toTimeString
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -72,10 +74,16 @@ class BridgeService @Autowired constructor(
       start = StatefulNode(
         stopName = formulation.start,
         time = formulation.time,
+        transfers = 0,
+        ridesAndWalks = 0,
+        lastLine = null,
       ),
       end = StatefulNode(
         stopName = formulation.end,
         time = -1,
+        transfers = -1,
+        ridesAndWalks = -1,
+        lastLine = null,
       ),
       edges = edgeFetcher,
       heuristic = heuristic,
@@ -90,9 +98,34 @@ class BridgeService @Autowired constructor(
 
   fun solveAndReport(formulation: Formulation): String {
     val (route, duration) = solve(formulation)
-    val routeDescription = route.joinToString("\n") { it.description }
-    val durationDescription = "Finished in $duration"
-    return "$routeDescription\n$durationDescription"
+
+    val routeSummary = route.joinToString("\n") { it.description }
+
+    val routeStartTime = route.first().start.time.toTimeString()
+    val routeEndTime = route.last().end.time.toTimeString()
+    val routeDuration = (route.last().end.time - route.first().start.time).toTimeDescription()
+    val durationSummary = "Time: $routeStartTime - $routeEndTime ($routeDuration)"
+
+    val transfersAmount = route.last().end.transfers
+    val transfersSummary = "Transfers: $transfersAmount"
+
+    val linesCount = route.last().end.ridesAndWalks
+    val linesSummary = "Different lines and walks: $linesCount"
+
+    val weightSummary = when (formulation.parameter) {
+      Parameter.TIME -> "Minimized parameter: Time"
+      Parameter.TRANSFERS -> "Minimized parameter: Transfers"
+    }
+
+    val runtimeSummary = "Finished in $duration"
+    return listOf(
+      routeSummary,
+      durationSummary,
+      transfersSummary,
+      linesSummary,
+      weightSummary,
+      runtimeSummary,
+    ).joinToString("\n")
   }
 
   private fun getAlgorithm(algorithmType: Algorithm): BridgeAlgorithm = {
@@ -118,50 +151,28 @@ class BridgeService @Autowired constructor(
     }
   }
 
-  private fun getEdgeFetcher(parameter: Parameter): BridgeEdgeFetcher = {
-    when (parameter) {
-      Parameter.TIME -> fetchEdgesByTime(it)
-      Parameter.TRANSFERS -> fetchEdgesByTransfers(it)
-    }
-  }
-
-  // implementations of fetchers and heuristics
-
-  private fun fetchEdgesByTime(node: StatefulNode): List<Edge<StatefulNode>> {
-    val busStop = dataService.busStops[node.stopName] ?: return emptyList()
-    return busStop.connections.map { conn ->
-      val weight = conn.totalTimeCost(node.time)
-      Edge(
-        start = node,
-        end = StatefulNode(
-          stopName = conn.end.name,
-          time = node.time + weight,
-        ),
-        description = conn.description,
-        weight = weight,
-      )
-    }
-  }
-
-  private fun fetchEdgesByTransfers(node: StatefulNode): List<Edge<StatefulNode>> {
-    val busStop = dataService.busStops[node.stopName] ?: return emptyList()
-    return busStop.connections.map { conn ->
-      val weight = when (conn) {
-        is WalkConnection if (conn.duration > allowedWalkTime) -> penalty
-        is TransferConnection if (conn.waitingTime(node.time) > allowedWaitTime) -> penalty
-        else -> 1
+  private fun getEdgeFetcher(parameter: Parameter): BridgeEdgeFetcher = fetcher@ { node ->
+    val busStop = dataService.busStops[node.stopName] ?: return@fetcher emptyList()
+    busStop.connections.map { conn ->
+      val next = node.evolve(conn)
+      val weight = when (parameter) {
+        Parameter.TIME -> conn.totalTimeCost(node.time)
+        Parameter.TRANSFERS -> when (conn) {
+          is WalkConnection if (conn.duration > allowedWalkTime) -> penalty
+          is TransferConnection if (conn.waitingTime(node.time) > allowedWaitTime) -> penalty
+          else -> 1
+        }
       }
       Edge(
         start = node,
-        end = StatefulNode(
-          stopName = conn.end.name,
-          time = node.time + conn.totalTimeCost(node.time),
-        ),
+        end = next,
         description = conn.description,
         weight = weight,
       )
     }
   }
+
+  // implementations of heuristics
 
   private fun distanceHeuristic(start: BusStop, end: BusStop, formulation: Formulation): Double {
     val pureDistance = haversine(start.location, end.location)
