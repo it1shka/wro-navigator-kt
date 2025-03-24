@@ -17,6 +17,9 @@ enum class Heuristic {
   LINES_COUNT,
   CONNECTION_COUNT,
   LOCATIONS_COVERAGE,
+  // compound heuristics
+  DISTANCE_AND_OVERLAP,
+  COMPOUND_COUNT,
 }
 
 /**

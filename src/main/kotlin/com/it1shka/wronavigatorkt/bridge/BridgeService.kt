@@ -112,6 +112,9 @@ class BridgeService @Autowired constructor(
       Heuristic.CONNECTION_COUNT -> connCountHeuristic(thisStop, formulation)
       Heuristic.LINES_OVERLAP -> linesOverlapHeuristic(thisStop, endStop, formulation)
       Heuristic.LOCATIONS_COVERAGE -> locationsCoverageHeuristic(thisStop, formulation)
+      // compound heuristics
+      Heuristic.DISTANCE_AND_OVERLAP -> distanceHeuristic(thisStop, endStop, formulation) + linesOverlapHeuristic(thisStop, endStop, formulation)
+      Heuristic.COMPOUND_COUNT -> linesCountHeuristic(thisStop, formulation) + connCountHeuristic(thisStop, formulation) + locationsCoverageHeuristic(thisStop, formulation)
     }
   }
 

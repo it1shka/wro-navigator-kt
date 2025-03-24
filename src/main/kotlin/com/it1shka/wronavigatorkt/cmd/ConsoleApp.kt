@@ -21,16 +21,18 @@ class ConsoleApp @Autowired constructor(
   val allowedLexicalDistance: Int,
 ) : CommandLineRunner {
   private val parameters = listOf(
-    "time" to Parameter.TIME,
-    "transfers" to Parameter.TRANSFERS,
+    "Time" to Parameter.TIME,
+    "Transfers" to Parameter.TRANSFERS,
   )
   private val heuristics = listOf(
-    "empty" to Heuristic.EMPTY,
-    "distance" to Heuristic.DISTANCE,
-    "lines-count" to Heuristic.LINES_COUNT,
-    "lines-overlap" to Heuristic.LINES_OVERLAP,
-    "conn-count" to Heuristic.CONNECTION_COUNT,
-    "coverage" to Heuristic.LOCATIONS_COVERAGE,
+    "Empty" to Heuristic.EMPTY,
+    "Distance" to Heuristic.DISTANCE,
+    "Lines Count" to Heuristic.LINES_COUNT,
+    "Lines Overlap" to Heuristic.LINES_OVERLAP,
+    "Connections Count" to Heuristic.CONNECTION_COUNT,
+    "Locations Coverage" to Heuristic.LOCATIONS_COVERAGE,
+    "Distance + Overlap" to Heuristic.DISTANCE_AND_OVERLAP,
+    "Compound Count" to Heuristic.COMPOUND_COUNT
   )
   private val algorithms = listOf(
     "dijkstra" to Algorithm.DIJKSTRA,
