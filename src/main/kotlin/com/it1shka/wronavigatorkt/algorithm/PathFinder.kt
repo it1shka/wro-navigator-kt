@@ -58,11 +58,5 @@ fun <Node> pathFinder(problem: Problem<Node>): Solution<Node> {
     }
   }
 
-  val route = mutableListOf<Edge<Node>>()
-  var currentEdge = parents[problem.end]
-  while (currentEdge != null) {
-    route.add(currentEdge)
-    currentEdge = parents[currentEdge.start]
-  }
-  return route.asReversed()
+  return traceRoute(parents, problem.end)
 }

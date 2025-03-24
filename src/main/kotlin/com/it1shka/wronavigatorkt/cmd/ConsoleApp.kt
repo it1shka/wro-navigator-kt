@@ -18,7 +18,7 @@ class ConsoleApp @Autowired constructor(
   private val dataService: DataService,
   private val bridgeService: BridgeService,
   @Value("\${search.allowed-lexical-distance}")
-  val allowedLexicalDistance: Int,
+  private val allowedLexicalDistance: Int,
 ) : CommandLineRunner {
   private val parameters = listOf(
     "Time" to Parameter.TIME,
@@ -67,8 +67,9 @@ class ConsoleApp @Autowired constructor(
       end = endStop,
       time = startTime,
     )
-    val solution = bridgeService.solveAndReport(formulation)
-    println(solution)
+
+    val report = bridgeService.solveAndReport(formulation)
+    println(report)
   }
 
   private tailrec fun <T> promptFromList(list: List<Pair<String, T>>, message: String): T {
