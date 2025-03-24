@@ -21,6 +21,10 @@ private typealias BridgeHeuristic = (node: StatefulNode) -> Double
 private typealias BridgeEdgeFetcher = (node: StatefulNode) -> List<Edge<StatefulNode>>
 private typealias BridgeSolution = Solution<StatefulNode>
 
+private fun asMaximizing(mainValue: Double, conversionValue: Double): Double {
+  return (1.0 / (mainValue + 1.0)) * conversionValue
+}
+
 /**
  * Bridge creates instance of
  * a problem using the existing data
@@ -53,6 +57,10 @@ class BridgeService @Autowired constructor(
   private val linesOverlapToTime: Double,
   @Value("\${bridge.heuristic.lines-overlap-to-transfers}")
   private val linesOverlapToTransfers: Double,
+  @Value("\${bridge.heuristic.coverage-to-time}")
+  private val coverageToTime: Double,
+  @Value("\${bridge.heuristic.coverage-to-transfers}")
+  private val coverageToTransfers: Double,
 ) {
   /**
    * Does not validate the input
@@ -98,10 +106,12 @@ class BridgeService @Autowired constructor(
     val thisStop = dataService.busStops[it.stopName] ?: return@heuristic 0.0
     val endStop = dataService.busStops[formulation.end] ?: return@heuristic 0.0
     when (formulation.heuristic) {
+      Heuristic.EMPTY -> 0.0
       Heuristic.DISTANCE -> distanceHeuristic(thisStop, endStop, formulation)
       Heuristic.LINES_COUNT -> linesCountHeuristic(thisStop, formulation)
       Heuristic.CONNECTION_COUNT -> connCountHeuristic(thisStop, formulation)
       Heuristic.LINES_OVERLAP -> linesOverlapHeuristic(thisStop, endStop, formulation)
+      Heuristic.LOCATIONS_COVERAGE -> locationsCoverageHeuristic(thisStop, formulation)
     }
   }
 
@@ -159,24 +169,34 @@ class BridgeService @Autowired constructor(
   }
 
   private fun linesCountHeuristic(stop: BusStop, formulation: Formulation): Double {
+    val lines = stop.lines.size.toDouble()
     return when (formulation.parameter) {
-      Parameter.TIME -> (1.0 / (stop.lines.size.toDouble() + 1.0)) * linesCountToTime
-      Parameter.TRANSFERS -> (1.0 / (stop.lines.size.toDouble() + 1.0)) * linesCountToTransfers
+      Parameter.TIME -> asMaximizing(lines, linesCountToTime)
+      Parameter.TRANSFERS -> asMaximizing(lines, linesCountToTransfers)
     }
   }
 
   private fun connCountHeuristic(stop: BusStop, formulation: Formulation): Double {
+    val connections = stop.connections.size.toDouble()
     return when (formulation.parameter) {
-      Parameter.TIME -> (1.0 / (stop.connections.size.toDouble() + 1.0)) * connCountToTime
-      Parameter.TRANSFERS -> (1.0 / (stop.connections.size.toDouble() + 1.0)) + connCountToTransfers
+      Parameter.TIME -> asMaximizing(connections, connCountToTime)
+      Parameter.TRANSFERS -> asMaximizing(connections, connCountToTransfers)
     }
   }
 
   private fun linesOverlapHeuristic(current: BusStop, end: BusStop, formulation: Formulation): Double {
     val overlap = current.lines.intersect(end.lines).size.toDouble()
     return when (formulation.parameter) {
-      Parameter.TIME -> (1.0 / (overlap + 1.0)) * linesOverlapToTime
-      Parameter.TRANSFERS -> (1.0 / (overlap + 1.0)) * linesOverlapToTransfers
+      Parameter.TIME -> asMaximizing(overlap, linesOverlapToTime)
+      Parameter.TRANSFERS -> asMaximizing(overlap, linesOverlapToTransfers)
+    }
+  }
+
+  private fun locationsCoverageHeuristic(current: BusStop, formulation: Formulation): Double {
+    val locations = current.locations.size.toDouble()
+    return when (formulation.parameter) {
+      Parameter.TIME -> asMaximizing(locations, coverageToTime)
+      Parameter.TRANSFERS -> asMaximizing(locations, coverageToTransfers)
     }
   }
 }

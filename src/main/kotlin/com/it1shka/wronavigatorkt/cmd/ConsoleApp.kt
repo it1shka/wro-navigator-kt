@@ -25,10 +25,12 @@ class ConsoleApp @Autowired constructor(
     "transfers" to Parameter.TRANSFERS,
   )
   private val heuristics = listOf(
+    "empty" to Heuristic.EMPTY,
     "distance" to Heuristic.DISTANCE,
     "lines-count" to Heuristic.LINES_COUNT,
     "lines-overlap" to Heuristic.LINES_OVERLAP,
-    "conn-count" to Heuristic.CONNECTION_COUNT
+    "conn-count" to Heuristic.CONNECTION_COUNT,
+    "coverage" to Heuristic.LOCATIONS_COVERAGE,
   )
   private val algorithms = listOf(
     "dijkstra" to Algorithm.DIJKSTRA,
@@ -50,9 +52,11 @@ class ConsoleApp @Autowired constructor(
     val startStop = promptStop("Please, provide the start stop: ")
     val endStop = promptStop("Please, provide the end stop: ")
     val startTime = promptTime("Please, enter your starting time: ")
-    val parameter = promptFromList(parameters, "Please, enter optimization parameter: ")
-    val heuristic = promptFromList(heuristics, "Please, enter your heuristic: ")
     val algorithm = promptFromList(algorithms, "Please, enter your algorithm: ")
+    val parameter = promptFromList(parameters, "Please, enter optimization parameter: ")
+    val heuristic = if (algorithm == Algorithm.DIJKSTRA)
+      Heuristic.EMPTY
+      else promptFromList(heuristics, "Please, enter your heuristic: ")
     val formulation = Formulation(
       parameter = parameter,
       algorithm = algorithm,

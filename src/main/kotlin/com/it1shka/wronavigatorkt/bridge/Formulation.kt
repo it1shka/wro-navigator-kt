@@ -11,10 +11,12 @@ enum class Algorithm {
 }
 
 enum class Heuristic {
+  EMPTY,
   DISTANCE,
   LINES_OVERLAP,
   LINES_COUNT,
   CONNECTION_COUNT,
+  LOCATIONS_COVERAGE,
 }
 
 /**
