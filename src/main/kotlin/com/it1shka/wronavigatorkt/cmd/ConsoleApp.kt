@@ -8,6 +8,10 @@ import com.it1shka.wronavigatorkt.bridge.Parameter
 import com.it1shka.wronavigatorkt.data.DataService
 import com.it1shka.wronavigatorkt.utils.intoSeconds
 import com.it1shka.wronavigatorkt.utils.stringSearch
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
@@ -19,6 +23,8 @@ class ConsoleApp @Autowired constructor(
   private val bridgeService: BridgeService,
   @Value("\${search.allowed-lexical-distance}")
   private val allowedLexicalDistance: Int,
+  @Value("\${general.solution-timeout}")
+  private val solutionTimeout: Long,
 ) : CommandLineRunner {
   private val parameters = listOf(
     "Time" to Parameter.TIME,
@@ -68,7 +74,18 @@ class ConsoleApp @Autowired constructor(
       time = startTime,
     )
 
-    val report = bridgeService.solveAndReport(formulation)
+    // TODO: temporary solution
+    // TODO: against OOM errors
+    // TODO: after timeout thread is still working
+    val report = runBlocking {
+      withTimeoutOrNull(solutionTimeout) {
+        val busyJob = GlobalScope.async {
+          bridgeService.solveAndReport(formulation)
+        }
+        busyJob.await()
+      } ?: "Solution timed out"
+    }
+
     println(report)
   }
 
