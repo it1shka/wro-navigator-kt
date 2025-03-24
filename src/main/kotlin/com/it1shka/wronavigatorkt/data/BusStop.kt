@@ -20,7 +20,7 @@ class BusStop(
     val locCount = locations.size
     val linesCount = lines.size
     """
-      Bus stop "$name at ($lat, $lon)"
+      Stop "$name" at ($lat, $lon)
       Connections: $connCount
       Locations: $locCount
       Lines: $linesCount

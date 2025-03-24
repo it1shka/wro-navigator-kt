@@ -21,6 +21,10 @@ private typealias BridgeHeuristic = (node: StatefulNode) -> Double
 private typealias BridgeEdgeFetcher = (node: StatefulNode) -> List<Edge<StatefulNode>>
 private typealias BridgeSolution = Solution<StatefulNode>
 
+private fun asMaximizing(mainValue: Double, conversionValue: Double): Double {
+  return (1.0 / (mainValue + 1.0)) * conversionValue
+}
+
 /**
  * Bridge creates instance of
  * a problem using the existing data
@@ -41,6 +45,22 @@ class BridgeService @Autowired constructor(
   private val avgBusSpeed: Double,
   @Value("\${bridge.heuristic.avg-interstop-distance}")
   private val avgInterstopDistance: Double,
+  @Value("\${bridge.heuristic.lines-count-to-time}")
+  private val linesCountToTime: Double,
+  @Value("\${bridge.heuristic.lines-count-to-transfers}")
+  private val linesCountToTransfers: Double,
+  @Value("\${bridge.heuristic.conn-count-to-time}")
+  private val connCountToTime: Double,
+  @Value("\${bridge.heuristic.conn-count-to-transfers}")
+  private val connCountToTransfers: Double,
+  @Value("\${bridge.heuristic.lines-overlap-to-time}")
+  private val linesOverlapToTime: Double,
+  @Value("\${bridge.heuristic.lines-overlap-to-transfers}")
+  private val linesOverlapToTransfers: Double,
+  @Value("\${bridge.heuristic.coverage-to-time}")
+  private val coverageToTime: Double,
+  @Value("\${bridge.heuristic.coverage-to-transfers}")
+  private val coverageToTransfers: Double,
 ) {
   /**
    * Does not validate the input
@@ -86,10 +106,15 @@ class BridgeService @Autowired constructor(
     val thisStop = dataService.busStops[it.stopName] ?: return@heuristic 0.0
     val endStop = dataService.busStops[formulation.end] ?: return@heuristic 0.0
     when (formulation.heuristic) {
+      Heuristic.EMPTY -> 0.0
       Heuristic.DISTANCE -> distanceHeuristic(thisStop, endStop, formulation)
-      Heuristic.LINES_COUNT -> thisStop.lines.size.toDouble()
-      Heuristic.CONNECTION_COUNT -> thisStop.connections.size.toDouble()
-      Heuristic.LINES_OVERLAP -> endStop.lines.intersect(thisStop.lines).size.toDouble()
+      Heuristic.LINES_COUNT -> linesCountHeuristic(thisStop, formulation)
+      Heuristic.CONNECTION_COUNT -> connCountHeuristic(thisStop, formulation)
+      Heuristic.LINES_OVERLAP -> linesOverlapHeuristic(thisStop, endStop, formulation)
+      Heuristic.LOCATIONS_COVERAGE -> locationsCoverageHeuristic(thisStop, formulation)
+      // compound heuristics
+      Heuristic.DISTANCE_AND_OVERLAP -> distanceHeuristic(thisStop, endStop, formulation) + linesOverlapHeuristic(thisStop, endStop, formulation)
+      Heuristic.COMPOUND_COUNT -> linesCountHeuristic(thisStop, formulation) + connCountHeuristic(thisStop, formulation) + locationsCoverageHeuristic(thisStop, formulation)
     }
   }
 
@@ -143,6 +168,38 @@ class BridgeService @Autowired constructor(
     return when (formulation.parameter) {
       Parameter.TIME -> (pureDistance / avgBusSpeed) * 3600.0 * 0.5
       Parameter.TRANSFERS -> pureDistance / avgInterstopDistance
+    }
+  }
+
+  private fun linesCountHeuristic(stop: BusStop, formulation: Formulation): Double {
+    val lines = stop.lines.size.toDouble()
+    return when (formulation.parameter) {
+      Parameter.TIME -> asMaximizing(lines, linesCountToTime)
+      Parameter.TRANSFERS -> asMaximizing(lines, linesCountToTransfers)
+    }
+  }
+
+  private fun connCountHeuristic(stop: BusStop, formulation: Formulation): Double {
+    val connections = stop.connections.size.toDouble()
+    return when (formulation.parameter) {
+      Parameter.TIME -> asMaximizing(connections, connCountToTime)
+      Parameter.TRANSFERS -> asMaximizing(connections, connCountToTransfers)
+    }
+  }
+
+  private fun linesOverlapHeuristic(current: BusStop, end: BusStop, formulation: Formulation): Double {
+    val overlap = current.lines.intersect(end.lines).size.toDouble()
+    return when (formulation.parameter) {
+      Parameter.TIME -> asMaximizing(overlap, linesOverlapToTime)
+      Parameter.TRANSFERS -> asMaximizing(overlap, linesOverlapToTransfers)
+    }
+  }
+
+  private fun locationsCoverageHeuristic(current: BusStop, formulation: Formulation): Double {
+    val locations = current.locations.size.toDouble()
+    return when (formulation.parameter) {
+      Parameter.TIME -> asMaximizing(locations, coverageToTime)
+      Parameter.TRANSFERS -> asMaximizing(locations, coverageToTransfers)
     }
   }
 }

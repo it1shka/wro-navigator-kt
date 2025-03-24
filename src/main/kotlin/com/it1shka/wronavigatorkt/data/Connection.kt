@@ -53,7 +53,7 @@ data class TransferConnection (
     val endStopName = end.name
     val departure = departureTime.toTimeString()
     val arrival = arrivalTime.toTimeString()
-    val output = "$company by bus \"$line\": $startStopName ($departure) - $endStopName ($arrival)"
+    val output = "$company by vehicle \"$line\": $startStopName ($departure) - $endStopName ($arrival)"
     return@lazy output
   }
 
