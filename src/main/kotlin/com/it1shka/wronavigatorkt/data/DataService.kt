@@ -1,6 +1,9 @@
 package com.it1shka.wronavigatorkt.data
 
 import com.it1shka.wronavigatorkt.utils.haversine
+import com.it1shka.wronavigatorkt.utils.timeDistance
+import com.it1shka.wronavigatorkt.utils.toDistanceDescription
+import com.it1shka.wronavigatorkt.utils.toTimeDescription
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -8,6 +11,7 @@ import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import kotlin.math.roundToInt
 import kotlin.time.measureTime
 
 @Service
@@ -24,6 +28,28 @@ class DataService (
   val busStops: Map<String, BusStop>
     get() = _busStops
   private val _busStops = mutableMapOf<String, BusStop>()
+
+  val linePopularity: Map<String, Int>
+    get() = _linePopularity
+  private val _linePopularity = mutableMapOf<String, Int>()
+
+  private val _lineTotalTime = mutableMapOf<String, Int>()
+  private val _lineTotalDistance = mutableMapOf<String, Double>()
+
+  fun averageTimeOf(line: String): Int? {
+    val totalTime = _lineTotalTime[line] ?: return null
+    val popularity = _linePopularity[line] ?: return null
+    if (totalTime <= 0 || popularity <= 0) return null
+    val avg = totalTime.toDouble() / popularity.toDouble()
+    return avg.roundToInt()
+  }
+
+  fun averageDistanceOf(line: String): Double? {
+    val totalDistance = _lineTotalDistance[line] ?: return null
+    val popularity = _linePopularity[line] ?: return null
+    if (totalDistance <= 0 || popularity <= 0) return null
+    return totalDistance / popularity.toDouble()
+  }
 
   @PostConstruct
   private fun initializeBusStops() {
@@ -59,6 +85,27 @@ class DataService (
     logger.info("Graph contains $nodesCount nodes")
     val connCount = _busStops.values.sumOf { it.connections.size }
     logger.info("Graph contains $connCount edges")
+    val popularLines = _linePopularity.keys
+      .asSequence()
+      .map { it to _linePopularity[it] }
+      .sortedBy { it.second }
+      .take(5)
+      .joinToString(", ") { "${it.first} (${it.second} transfers)" }
+    logger.info("Popular lines: $popularLines")
+    val fastestLines = _linePopularity.keys
+      .asSequence()
+      .map { it to averageTimeOf(it) }
+      .sortedBy { it.second }
+      .take(5)
+      .joinToString(", ") { "${it.first} (${it.second?.toTimeDescription() ?: "Unknown"})" }
+    logger.info("Fastest lines: $fastestLines")
+    val longestLines = _linePopularity.keys
+      .asSequence()
+      .map { it to averageDistanceOf(it) }
+      .sortedByDescending { it.second }
+      .take(5)
+      .joinToString(", ") { "${it.first} (${it.second?.toDistanceDescription() ?: "Unknown"})" }
+    logger.info("Longest lines: $longestLines")
   }
 
   private fun processScheduleRecord(record: ScheduleRecord) {
@@ -76,6 +123,11 @@ class DataService (
     if (!ok) {
       logger.error("Failed to update the end bus stop $record.endStop")
     }
+    _linePopularity[record.line] = (_linePopularity[record.line] ?: 0) + 1
+    val lineDuration = timeDistance(record.departureTime, record.arrivalTime)
+    _lineTotalTime[record.line] = (_lineTotalTime[record.line] ?: 0) + lineDuration
+    val lineMagnitude = haversine(record.startStopLat to record.startStopLon, record.endStopLat to record.endStopLon)
+    _lineTotalDistance[record.line] = (_lineTotalDistance[record.line] ?: 0.0) + lineMagnitude
   }
 
   private fun updateBusStop(name: String, record: ScheduleRecord, isStart: Boolean): Boolean {
