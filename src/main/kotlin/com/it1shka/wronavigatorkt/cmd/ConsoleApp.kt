@@ -37,6 +37,9 @@ class ConsoleApp @Autowired constructor(
     "Lines Overlap" to Heuristic.LINES_OVERLAP,
     "Connections Count" to Heuristic.CONNECTION_COUNT,
     "Locations Coverage" to Heuristic.LOCATIONS_COVERAGE,
+    "Line Popularity" to Heuristic.LINE_POPULARITY,
+    "Line Average Time" to Heuristic.LINE_AVG_TIME,
+    "Line Average Distance" to Heuristic.LINE_AVG_DISTANCE,
     "Distance + Overlap" to Heuristic.DISTANCE_AND_OVERLAP,
     "Compound Count" to Heuristic.COMPOUND_COUNT
   )
