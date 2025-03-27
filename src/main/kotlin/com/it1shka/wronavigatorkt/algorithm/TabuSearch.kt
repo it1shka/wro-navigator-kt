@@ -1,7 +1,5 @@
 package com.it1shka.wronavigatorkt.algorithm
 
-import com.it1shka.wronavigatorkt.utils.variance
-
 /**
  * Class representing Tabu Search.
  * Contains configuration for the search.
@@ -15,7 +13,8 @@ class TabuSearch <S> (
   private val memorySize: Int = 5,
   private val aspiration: ((List<Double>, Double) -> Boolean)? = null,
   private val tabuLimit: Int? = null,
-  private val stoppingVariance: Int? = null
+  private val repetitionsLimit: Int? = null,
+  private val onChange: ((S, S) -> Unit)? = null
 ) {
   private var step = 0
   private val tabu = mutableMapOf<S, Int>(initial to -1)
@@ -23,20 +22,24 @@ class TabuSearch <S> (
   private var localOptimum = initial
   private var globalBestCost = cost(initial)
   private var globalOptimum = initial
+  private var repetitions = 0
 
   fun run(): S {
     while (step < maxIterations) {
-      localOptimum = findLocalOptimum() ?: return globalOptimum
+      val nextLocalOptimum = findLocalOptimum() ?: return globalOptimum
+      repetitions = if (nextLocalOptimum == localOptimum)
+        repetitions + 1
+        else 0
+      if (repetitionsLimit != null && repetitions > repetitionsLimit) {
+        return globalOptimum
+      }
+      localOptimum = nextLocalOptimum
       addToTabu(localOptimum)
       addToMemory(localOptimum)
-      if (cost(localOptimum) > globalBestCost) {
+      if (cost(localOptimum) < globalBestCost) {
+        onChange?.invoke(globalOptimum, localOptimum)
         globalOptimum = localOptimum
         globalBestCost = cost(localOptimum)
-      } else if (stoppingVariance != null) {
-        val currentVariance = memory.variance()
-        if (currentVariance < stoppingVariance) {
-          return globalOptimum
-        }
       }
       step++
     }

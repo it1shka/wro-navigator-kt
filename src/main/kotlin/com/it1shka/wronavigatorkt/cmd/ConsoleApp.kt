@@ -1,11 +1,13 @@
 package com.it1shka.wronavigatorkt.cmd
 
 import com.it1shka.wronavigatorkt.bridge.Algorithm
+import com.it1shka.wronavigatorkt.bridge.AspirationType
 import com.it1shka.wronavigatorkt.bridge.BridgeService
 import com.it1shka.wronavigatorkt.bridge.Formulation
 import com.it1shka.wronavigatorkt.bridge.Heuristic
 import com.it1shka.wronavigatorkt.bridge.Parameter
 import com.it1shka.wronavigatorkt.bridge.TabuBridgeService
+import com.it1shka.wronavigatorkt.bridge.TabuFormulation
 import com.it1shka.wronavigatorkt.data.DataService
 import com.it1shka.wronavigatorkt.utils.intoSeconds
 import com.it1shka.wronavigatorkt.utils.stringSearch
@@ -64,6 +66,17 @@ class ConsoleApp @Autowired constructor(
     "a*" to Algorithm.PATHFINDER,
   )
 
+  private val aspirationTypes = listOf(
+    "Aspiration S' > avg(A)" to AspirationType.AVERAGE,
+    "Aspiration S' > max(A)" to AspirationType.MAX,
+    "None" to AspirationType.NONE,
+  )
+
+  private val tabuLimits = listOf(
+    "Unbound Tabu set" to false,
+    "Limit Tabu set" to true,
+  )
+
   override fun run(vararg args: String?) = mainLoop()
 
   private tailrec fun mainLoop() {
@@ -82,10 +95,19 @@ class ConsoleApp @Autowired constructor(
     val stops = promptListOfStops("Stops: ")
     val startTime = promptTime("Please, enter your starting time: ")
     val parameter = promptFromList(parameters, "Please, enter your starting parameter: ")
-    // TODO:
-    val (solution, duration) = tabuBridgeService.solve(stops, startTime, parameter)
-    val description = solution.joinToString("\n") { it.description }
-    println(description)
+    val aspiration = promptFromList(aspirationTypes, "Please, provide the aspiration criteria")
+    val tabuLimit = promptFromList(tabuLimits, "Do you want to limit the tabu search? ")
+    val report = tabuBridgeService.solveAndReport(TabuFormulation(
+      stops = stops,
+      time = startTime,
+      parameter = parameter,
+      aspiration = aspiration,
+      tabuLimit = tabuLimit,
+      onChange = { prev, next ->
+        println("Changed from $prev to $next")
+      }
+    ))
+    println(report)
   }
 
   private fun resolvePathFindingProblem() {
