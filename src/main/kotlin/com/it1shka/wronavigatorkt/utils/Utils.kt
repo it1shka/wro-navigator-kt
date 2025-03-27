@@ -162,3 +162,20 @@ fun String.intoSeconds(): Int? {
     else -> null
   }
 }
+
+/**
+ * Needed for Tabu search
+ * premature stop
+ */
+fun List<Double>.variance(): Double {
+  val mean = this.sum() / this.size
+  return this.sumOf { (it - mean).pow(2) } / this.size
+}
+
+fun <T> List<T>.swap(index1: Int, index2: Int): List<T> {
+  val mutableList = this.toMutableList()
+  val temp = mutableList[index1]
+  mutableList[index1] = mutableList[index2]
+  mutableList[index2] = temp
+  return mutableList.toList()
+}

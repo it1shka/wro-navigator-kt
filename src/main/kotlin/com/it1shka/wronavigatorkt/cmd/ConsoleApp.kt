@@ -1,10 +1,14 @@
 package com.it1shka.wronavigatorkt.cmd
 
 import com.it1shka.wronavigatorkt.bridge.Algorithm
+import com.it1shka.wronavigatorkt.bridge.AspirationType
 import com.it1shka.wronavigatorkt.bridge.BridgeService
 import com.it1shka.wronavigatorkt.bridge.Formulation
 import com.it1shka.wronavigatorkt.bridge.Heuristic
 import com.it1shka.wronavigatorkt.bridge.Parameter
+import com.it1shka.wronavigatorkt.bridge.SamplingType
+import com.it1shka.wronavigatorkt.bridge.TabuBridgeService
+import com.it1shka.wronavigatorkt.bridge.TabuFormulation
 import com.it1shka.wronavigatorkt.data.DataService
 import com.it1shka.wronavigatorkt.utils.intoSeconds
 import com.it1shka.wronavigatorkt.utils.stringSearch
@@ -17,19 +21,35 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Service
 
+private enum class ProblemType {
+  PATH_FINDING,
+  TRAVELLING_AROUND,
+  GENERATE_PATH,
+  EXIT
+}
+
 @Service
 class ConsoleApp @Autowired constructor(
   private val dataService: DataService,
   private val bridgeService: BridgeService,
+  private val tabuBridgeService: TabuBridgeService,
   @Value("\${search.allowed-lexical-distance}")
   private val allowedLexicalDistance: Int,
   @Value("\${general.solution-timeout}")
   private val solutionTimeout: Long,
 ) : CommandLineRunner {
+  private val problemTypes = listOf(
+    "Path between two stops" to ProblemType.PATH_FINDING,
+    "Circle path between {n} stops" to ProblemType.TRAVELLING_AROUND,
+    "Generate long path of stops" to ProblemType.GENERATE_PATH,
+    "Stop application" to ProblemType.EXIT
+  )
+
   private val parameters = listOf(
     "Time" to Parameter.TIME,
     "Transfers" to Parameter.TRANSFERS,
   )
+
   private val heuristics = listOf(
     "Empty" to Heuristic.EMPTY,
     "Distance" to Heuristic.DISTANCE,
@@ -43,20 +63,70 @@ class ConsoleApp @Autowired constructor(
     "Distance + Overlap" to Heuristic.DISTANCE_AND_OVERLAP,
     "Compound Count" to Heuristic.COMPOUND_COUNT
   )
+
   private val algorithms = listOf(
     "dijkstra" to Algorithm.DIJKSTRA,
     "a*" to Algorithm.PATHFINDER,
   )
 
-  override fun run(vararg args: String?) {
-    mainLoop()
-  }
+  private val aspirationTypes = listOf(
+    "Aspiration S' > avg(A)" to AspirationType.AVERAGE,
+    "Aspiration S' > max(A)" to AspirationType.MAX,
+    "None" to AspirationType.NONE,
+  )
+
+  private val tabuLimits = listOf(
+    "Unbound Tabu set" to false,
+    "Limit Tabu set" to true,
+  )
+
+  private val samplingTypes = listOf(
+    "Sample best distance" to SamplingType.BY_DISTANCE,
+    "Sample by best overlap" to SamplingType.BY_OVERLAP,
+    "Disable sampling" to SamplingType.NONE,
+  )
+
+  override fun run(vararg args: String?) = mainLoop()
 
   private tailrec fun mainLoop() {
-    resolvePathFindingProblem()
+    val userChoice = promptFromList(problemTypes, "What would you like to resolve?")
+    when (userChoice) {
+      ProblemType.EXIT -> return
+      ProblemType.PATH_FINDING -> resolvePathFindingProblem()
+      ProblemType.TRAVELLING_AROUND -> resolveTravellingAroundProblem()
+      ProblemType.GENERATE_PATH -> generateStopPath()
+    }
     println("*".repeat(5))
     println()
     return mainLoop()
+  }
+
+  private fun generateStopPath() {
+    val pathSize = promptPositiveInteger("Please, provide path size: ")
+    val busStops = dataService.busStops.keys.shuffled().take(pathSize)
+    val path = busStops.joinToString(", ")
+    println(path)
+  }
+
+  private fun resolveTravellingAroundProblem() {
+    val stops = promptListOfStops("Stops: ")
+    val startTime = promptTime("Please, enter your starting time: ")
+    val parameter = promptFromList(parameters, "Please, enter your starting parameter: ")
+    val aspiration = promptFromList(aspirationTypes, "Please, provide the aspiration criteria: ")
+    val tabuLimit = promptFromList(tabuLimits, "Do you want to limit the tabu search? ")
+    val samplingType = promptFromList(samplingTypes, "Please, specify the sampling type: ")
+    val report = tabuBridgeService.solveAndReport(TabuFormulation(
+      stops = stops,
+      time = startTime,
+      parameter = parameter,
+      aspiration = aspiration,
+      tabuLimit = tabuLimit,
+      sampling = samplingType,
+      onChange = { prev, next, prevCost, nextCost ->
+        println("Optimized $prevCost -> $nextCost: $next")
+      }
+    ))
+    println(report)
   }
 
   private fun resolvePathFindingProblem() {
@@ -90,6 +160,30 @@ class ConsoleApp @Autowired constructor(
     }
 
     println(report)
+  }
+
+  private tailrec fun promptPositiveInteger(message: String): Int {
+    println(message)
+    val input = (readlnOrNull() ?: "")
+    val maybeValue = input.toIntOrNull()
+    if (maybeValue != null && maybeValue > 0) {
+      return maybeValue
+    }
+    println("Please, provide a positive integer")
+    return promptPositiveInteger(message)
+  }
+
+  private tailrec fun promptListOfStops(message: String): List<String> {
+    println(message)
+    val input = (readlnOrNull() ?: "")
+    val stopsList = input
+      .split(",")
+      .map { stopName ->
+        promptStop("Please, provide the stop: ", stopName.trim())
+      }
+    if (stopsList.size >= 2) return stopsList
+    println("Stops list should have the minimum length of 2.")
+    return promptListOfStops(message)
   }
 
   private tailrec fun <T> promptFromList(list: List<Pair<String, T>>, message: String): T {
@@ -129,7 +223,7 @@ class ConsoleApp @Autowired constructor(
     if (bestDistance <= allowedLexicalDistance) {
       return best
     }
-    println("Potential stops: ")
+    println("Potential stops for \"$input\": ")
     for ((index, stop) in otherPossibilities.withIndex()) {
       println("${index + 1} ${stop.first} (diff: ${stop.second})")
     }
