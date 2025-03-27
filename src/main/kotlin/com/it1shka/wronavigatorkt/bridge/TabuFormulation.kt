@@ -8,12 +8,19 @@ enum class AspirationType {
   NONE,
 }
 
+enum class SamplingType {
+  BY_DISTANCE,
+  BY_OVERLAP,
+  NONE,
+}
+
 data class TabuFormulation (
   val stops: List<String>,
   val time: Int,
   val parameter: Parameter,
   val aspiration: AspirationType,
   val tabuLimit: Boolean,
+  val sampling: SamplingType,
   val onChange: ((RoutePlan, RoutePlan, Double, Double) -> Unit)?
 )
 

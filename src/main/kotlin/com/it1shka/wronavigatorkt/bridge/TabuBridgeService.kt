@@ -1,6 +1,9 @@
 package com.it1shka.wronavigatorkt.bridge
 
 import com.it1shka.wronavigatorkt.algorithm.TabuSearch
+import com.it1shka.wronavigatorkt.data.BusStop
+import com.it1shka.wronavigatorkt.data.DataService
+import com.it1shka.wronavigatorkt.utils.haversine
 import com.it1shka.wronavigatorkt.utils.swap
 import com.it1shka.wronavigatorkt.utils.toTimeDescription
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,12 +21,15 @@ import kotlin.time.measureTime
 @Service
 class TabuBridgeService @Autowired constructor (
   private val bridgeService: BridgeService,
+  private val dataService: DataService,
   @Value("\${tabu-bridge.max-iterations}")
   private val maxIterations: Int,
   @Value("\${tabu-bridge.memory-size}")
   private val memorySize: Int,
   @Value("\${tabu-bridge.repetitions-limit}")
   private val repetitionsLimit: Int,
+  @Value("\${tabu-bridge.min-sampling}")
+  private val minSampling: Int,
 ) {
   private val routesCache = hashMapOf<RoutePlanWithConfig, Route>()
   private val routeFragmentsCache = hashMapOf<RouteParams, Route>()
@@ -31,7 +37,7 @@ class TabuBridgeService @Autowired constructor (
   fun solve(formulation: TabuFormulation): Pair<Route, Duration> {
     val searchInstance = TabuSearch (
       initial = formulation.stops,
-      neighborhood = ::getNeighborhood,
+      neighborhood = applySampling(formulation.sampling),
       cost = {evaluateRoutePlan(RoutePlanWithConfig(
         plan = it,
         time = formulation.time,
@@ -97,6 +103,41 @@ class TabuBridgeService @Autowired constructor (
       }
     }
   }.asSequence()
+
+  private fun applySampling(sampling: SamplingType): ((RoutePlan) -> Sequence<RoutePlan>) = {
+    val neighborhood = getNeighborhood(it)
+    when (sampling) {
+      SamplingType.BY_DISTANCE -> sampleBy(neighborhood) { start, end ->
+        haversine(start.location, end.location)
+      }
+      SamplingType.BY_OVERLAP -> sampleBy(neighborhood) { start, end ->
+        1 / (start.lines.intersect(end.lines).size.toDouble() + 1.0)
+      }
+      SamplingType.NONE -> neighborhood
+    }
+  }
+
+  private fun sampleBy(neighborhood: Sequence<RoutePlan>, estimation: (BusStop, BusStop) -> Double): Sequence<RoutePlan> {
+    val collectedNeighborhood = neighborhood.toList()
+    if (collectedNeighborhood.size <= minSampling) {
+      return collectedNeighborhood.asSequence()
+    }
+    val withDistances = collectedNeighborhood.map { plan ->
+      val totalDistance = (plan + plan.first())
+        .zipWithNext()
+        .sumOf { (start, end) ->
+          val startStop = dataService.busStops[start] ?: return@sumOf Double.MAX_VALUE
+          val endStop = dataService.busStops[end] ?: return@sumOf Double.MAX_VALUE
+          estimation(startStop, endStop)
+        }
+      plan to totalDistance
+    }
+    val meanDistance = withDistances.sumOf { it.second } / withDistances.size.toDouble()
+    return withDistances
+      .asSequence()
+      .filter { it.second <= meanDistance }
+      .map { it.first }
+  }
 
   private fun planToRoute(planConfig: RoutePlanWithConfig): Route {
     val cached = routesCache[planConfig]

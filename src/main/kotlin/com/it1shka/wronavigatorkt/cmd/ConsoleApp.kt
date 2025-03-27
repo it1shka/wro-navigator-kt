@@ -6,6 +6,7 @@ import com.it1shka.wronavigatorkt.bridge.BridgeService
 import com.it1shka.wronavigatorkt.bridge.Formulation
 import com.it1shka.wronavigatorkt.bridge.Heuristic
 import com.it1shka.wronavigatorkt.bridge.Parameter
+import com.it1shka.wronavigatorkt.bridge.SamplingType
 import com.it1shka.wronavigatorkt.bridge.TabuBridgeService
 import com.it1shka.wronavigatorkt.bridge.TabuFormulation
 import com.it1shka.wronavigatorkt.data.DataService
@@ -79,6 +80,12 @@ class ConsoleApp @Autowired constructor(
     "Limit Tabu set" to true,
   )
 
+  private val samplingTypes = listOf(
+    "Sample best distance" to SamplingType.BY_DISTANCE,
+    "Sample by best overlap" to SamplingType.BY_OVERLAP,
+    "Disable sampling" to SamplingType.NONE,
+  )
+
   override fun run(vararg args: String?) = mainLoop()
 
   private tailrec fun mainLoop() {
@@ -105,14 +112,16 @@ class ConsoleApp @Autowired constructor(
     val stops = promptListOfStops("Stops: ")
     val startTime = promptTime("Please, enter your starting time: ")
     val parameter = promptFromList(parameters, "Please, enter your starting parameter: ")
-    val aspiration = promptFromList(aspirationTypes, "Please, provide the aspiration criteria")
+    val aspiration = promptFromList(aspirationTypes, "Please, provide the aspiration criteria: ")
     val tabuLimit = promptFromList(tabuLimits, "Do you want to limit the tabu search? ")
+    val samplingType = promptFromList(samplingTypes, "Please, specify the sampling type: ")
     val report = tabuBridgeService.solveAndReport(TabuFormulation(
       stops = stops,
       time = startTime,
       parameter = parameter,
       aspiration = aspiration,
       tabuLimit = tabuLimit,
+      sampling = samplingType,
       onChange = { prev, next, prevCost, nextCost ->
         println("Optimized $prevCost -> $nextCost: $next")
       }
