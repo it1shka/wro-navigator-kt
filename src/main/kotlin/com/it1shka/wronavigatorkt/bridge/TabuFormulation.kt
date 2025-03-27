@@ -14,7 +14,7 @@ data class TabuFormulation (
   val parameter: Parameter,
   val aspiration: AspirationType,
   val tabuLimit: Boolean,
-  val onChange: ((RoutePlan, RoutePlan) -> Unit)?
+  val onChange: ((RoutePlan, RoutePlan, Double, Double) -> Unit)?
 )
 
 typealias Route = Solution<StatefulNode>

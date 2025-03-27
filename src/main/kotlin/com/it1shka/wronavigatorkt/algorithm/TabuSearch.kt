@@ -14,7 +14,7 @@ class TabuSearch <S> (
   private val aspiration: ((List<Double>, Double) -> Boolean)? = null,
   private val tabuLimit: Int? = null,
   private val repetitionsLimit: Int? = null,
-  private val onChange: ((S, S) -> Unit)? = null
+  private val onChange: ((S, S, Double, Double) -> Unit)? = null
 ) {
   private var step = 0
   private val tabu = mutableMapOf<S, Int>(initial to -1)
@@ -37,7 +37,7 @@ class TabuSearch <S> (
       addToTabu(localOptimum)
       addToMemory(localOptimum)
       if (cost(localOptimum) < globalBestCost) {
-        onChange?.invoke(globalOptimum, localOptimum)
+        onChange?.invoke(globalOptimum, localOptimum, globalBestCost, cost(localOptimum))
         globalOptimum = localOptimum
         globalBestCost = cost(localOptimum)
       }

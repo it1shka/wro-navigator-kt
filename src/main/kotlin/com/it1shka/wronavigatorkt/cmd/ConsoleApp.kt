@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service
 private enum class ProblemType {
   PATH_FINDING,
   TRAVELLING_AROUND,
+  GENERATE_PATH,
   EXIT
 }
 
@@ -39,6 +40,7 @@ class ConsoleApp @Autowired constructor(
   private val problemTypes = listOf(
     "Path between two stops" to ProblemType.PATH_FINDING,
     "Circle path between {n} stops" to ProblemType.TRAVELLING_AROUND,
+    "Generate long path of stops" to ProblemType.GENERATE_PATH,
     "Stop application" to ProblemType.EXIT
   )
 
@@ -85,10 +87,18 @@ class ConsoleApp @Autowired constructor(
       ProblemType.EXIT -> return
       ProblemType.PATH_FINDING -> resolvePathFindingProblem()
       ProblemType.TRAVELLING_AROUND -> resolveTravellingAroundProblem()
+      ProblemType.GENERATE_PATH -> generateStopPath()
     }
     println("*".repeat(5))
     println()
     return mainLoop()
+  }
+
+  private fun generateStopPath() {
+    val pathSize = promptPositiveInteger("Please, provide path size: ")
+    val busStops = dataService.busStops.keys.shuffled().take(pathSize)
+    val path = busStops.joinToString(", ")
+    println(path)
   }
 
   private fun resolveTravellingAroundProblem() {
@@ -103,8 +113,8 @@ class ConsoleApp @Autowired constructor(
       parameter = parameter,
       aspiration = aspiration,
       tabuLimit = tabuLimit,
-      onChange = { prev, next ->
-        println("Changed from $prev to $next")
+      onChange = { prev, next, prevCost, nextCost ->
+        println("Optimized $prevCost -> $nextCost: $next")
       }
     ))
     println(report)
@@ -141,6 +151,17 @@ class ConsoleApp @Autowired constructor(
     }
 
     println(report)
+  }
+
+  private tailrec fun promptPositiveInteger(message: String): Int {
+    println(message)
+    val input = (readlnOrNull() ?: "")
+    val maybeValue = input.toIntOrNull()
+    if (maybeValue != null && maybeValue > 0) {
+      return maybeValue
+    }
+    println("Please, provide a positive integer")
+    return promptPositiveInteger(message)
   }
 
   private tailrec fun promptListOfStops(message: String): List<String> {
