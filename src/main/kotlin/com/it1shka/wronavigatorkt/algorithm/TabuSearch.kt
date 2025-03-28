@@ -62,7 +62,7 @@ class TabuSearch <S> (
 
   private fun addToTabu(solution: S) {
     tabu[solution] = step
-    if (tabuLimit == null) {
+    if (tabuLimit == null || tabu.size <= tabuLimit) {
       return
     }
     val oldest = tabu.entries
